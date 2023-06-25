@@ -5,6 +5,7 @@ from tqdm import tqdm
 
 
 class SmallWorldSimulation:
+
     def __init__(self, num_nodes, p_vanish):
         self.num_nodes = num_nodes
         self.p_vanish = p_vanish
@@ -16,11 +17,10 @@ class SmallWorldSimulation:
         num_clusters = int(num_clusters_side * num_clusters_side)  # Total number of clusters
         nodes_per_cluster = self.num_nodes // num_clusters  # Nodes in each cluster
         self.num_nodes = num_clusters * nodes_per_cluster
+        inter_cluster_edges = num_clusters * 50
 
         in_cluster_prob = min(150 / nodes_per_cluster, 1)
-        inter_cluster_edges = num_clusters * 10
-        print(f"number of clusters: {num_clusters}")
-        print(f"nodes per cluster: {nodes_per_cluster}")
+        
 
         # Create separate clusters
         clusters = [ig.Graph.Erdos_Renyi(n=nodes_per_cluster,
@@ -39,7 +39,7 @@ class SmallWorldSimulation:
             for node in range(cluster.vcount()):
                 node_global_id = i * nodes_per_cluster + node  # Global node ID across all clusters
                 cluster_location = np.array(cluster_locations[i])
-                node_location = cluster_location + np.random.normal(0, 0.01, 2)  # Nodes are close to their cluster
+                node_location = cluster_location + np.random.normal(0, 0.02, 2)  # Nodes are close to their cluster
                 locations[int(node_global_id)] = tuple(node_location)
 
         # Combine all clusters into a single graph
@@ -64,7 +64,7 @@ class SmallWorldSimulation:
         # Calculate Euclidean distance between two nodes
         loc1 = np.array(self.locations[node1])
         loc2 = np.array(self.locations[node2])
-        return max(np.linalg.norm(loc1-loc2), 0.0001)
+        return max(np.linalg.norm(loc1-loc2), 0.01)
 
     def simulate(self):
         source = random.randint(0, self.num_nodes - 1)
@@ -102,8 +102,24 @@ class SmallWorldSimulation:
 
             prev_node = int(current_node)
             current_node = int(np.random.choice(neighbors, p=weights))
+
             
             steps += 1
+
+def run_simulation(num_nodes, p_vanish, num_trials):
+    simulation = SmallWorldSimulation(num_nodes, p_vanish)
+    total_steps = 0
+    num_successes = 0
+    
+    for _ in tqdm(range(num_trials)):
+        steps = simulation.simulate()
+        if steps != -1:  # If mail reached the target
+            total_steps += steps
+            num_successes += 1
+    return avg_steps
+
+
+
 
 
 if __name__ == "__main__": 
